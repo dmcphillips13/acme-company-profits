@@ -16,6 +16,10 @@
 
     <script type="text/babel"></script>
     <style>
+      .profitInfo {
+        display: inline-flex;
+        justify-content: space-around;
+      }
       body {
         font-family: sans-serif;
         color: black;
@@ -38,7 +42,10 @@
         justify-content: center;
         align-items: center;
       }
-
+      main {
+        display: flex;
+        justify-content: space-around;
+      }
       #companiesPage {
         display: flex;
       }
@@ -46,10 +53,12 @@
       #companiesPage > ul {
         list-style-type: none;
         flex: 1;
+        background-color: rgb(245, 245, 199);
       }
 
       #companiesPage > ul > li {
         margin-bottom: 1rem;
+        background-color: rgb(245, 245, 199);
       }
 
       #companiesPage > div {
@@ -81,16 +90,74 @@
       const { render } = ReactDOM;
       const { Switch, Link, Route, HashRouter, Redirect } = ReactRouterDOM;
 
-      const Companies = ({ companies }) => {
-        console.log(companies);
+      class Profits extends Component {
+        constructor() {
+          super();
+          this.state = {
+            profits: []
+          };
+        }
+        componentDidUpdate(prevProps) {
+          if (prevProps.match.params.id !== this.props.match.params.id) {
+            axios
+              .get(
+                `${API}/companies/${this.props.match.params.id}/companyProfits`
+              )
+
+              .then(response => {
+                return this.setState({
+                  profits: response.data
+                });
+              });
+          }
+        }
+        componentDidMount() {
+          axios
+            .get(
+              `${API}/companies/${this.props.match.params.id}/companyProfits`
+            )
+
+            .then(response => {
+              return this.setState({
+                profits: response.data
+              });
+            });
+        }
+        render() {
+          const { profits } = this.state;
+          // console.log(profits);
+          return (
+            <main>
+              <div id="componiesPage">
+                <ul>
+                  <div>
+                    {profits.map(prof => {
+                      return <li>{prof.amount}</li>;
+                    })}
+                  </div>
+                  <div>
+                    {profits.map(prof => {
+                      return <li>{prof.fiscalYear}</li>;
+                    })}
+                  </div>
+                </ul>
+              </div>
+            </main>
+          );
+        }
+      }
+
+      const Companies = ({ companies, locastion }) => {
+        console.log(location.hash);
         return (
           <div>
             <ul>
               {companies.map(comp => {
+                console.log(location.hash);
                 return (
-                  <a href={comp.id}>
-                    <li>{comp.name}</li>
-                  </a>
+                  <li key={`${comp.phone}`} id="companiesPage">
+                    <Link to={`/companies/${comp.id}`}>{comp.name} </Link>
+                  </li>
                 );
               })}
             </ul>
@@ -98,11 +165,24 @@
         );
       };
 
-      const Nav = companies => {
-        console.log(companies);
+      const Nav = ({ location }) => {
+        //console.log(location);
+        const { pathname } = location;
+        //console.log(pathname);
         return (
           <nav>
-            <Link to="/companies">Companies </Link>
+            <Link
+              to="/companies"
+              className={pathname === "/companies" ? "selected" : " "}
+            >
+              Companies{" "}
+            </Link>
+            <Link
+              to="/companies/:id"
+              className={pathname === "/companies/:id" ? "selected" : " "}
+            >
+              Profits{" "}
+            </Link>
           </nav>
         );
       };
@@ -120,29 +200,43 @@
             return res.data;
           });
 
-          p.then(data => {
-            //console.log(data);
+          p.then(per => {
+            //console.log(per);
             this.setState({
-              companies: data
+              companies: per
             });
           });
         }
 
         render() {
           const { companies } = this.state;
-          // console.log(companies);
+          //console.log(companies);
           return (
             <HashRouter>
-              <Nav companies={companies} />
-              <Route companies={companies} />
-              <Companies companies={companies} />
-              <Route companies={companies} />
+              <Route component={Nav} />
+
+              <main>
+                <Route
+                  path="/companies"
+                  render={props => (
+                    <Companies companies={companies} match={props.match} />
+                  )}
+                />
+
+                <Route
+                  path="/companies/:id"
+                  render={props => (
+                    <Profits companies={companies} match={props.match} />
+                  )}
+                />
+              </main>
             </HashRouter>
           );
         }
       }
       const root = document.querySelector("#root");
       render(<App />, root);
+      //   //render(<Profits />, root);
     </script>
   </body>
 </html>
